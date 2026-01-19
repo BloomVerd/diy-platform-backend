@@ -23,7 +23,6 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
       playground: true,
       introspection: true,
       resolvers: {},
-
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       context: ({ req, res }: any) => ({ req, res }),
     }),
