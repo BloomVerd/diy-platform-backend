@@ -5,6 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './database/database.module';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       context: ({ req, res }: any) => ({ req, res }),
     }),
+    UserModule,
   ],
   controllers: [AppController],
   providers: [AppService],
