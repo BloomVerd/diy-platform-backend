@@ -1,16 +1,16 @@
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Connection } from 'typeorm';
+import { DataSource } from 'typeorm';
 import { JwtModule } from '@nestjs/jwt';
-import { AuthService } from '../../../src/user/services/auth.service';
+import { UserService } from '../../../src/user/user.service';
 import { loadEntites } from '../../helpers/load-entities';
 
-describe('AuthService', () => {
+describe('UserService', () => {
   let module: TestingModule;
-  let connection: Connection;
+  let dataSource: DataSource;
 
-  let authService: AuthService;
+  let userService: UserService;
 
   beforeAll(async () => {
     module = await Test.createTestingModule({
@@ -19,22 +19,13 @@ describe('AuthService', () => {
           isGlobal: true,
           envFilePath: '.env.test.local',
         }),
-        JwtModule.registerAsync({
-          imports: [ConfigModule],
-          useFactory: async (configService: ConfigService) => ({
-            secret: configService.get<string>('JWT_SECRET'),
-            secretOrPrivateKey: configService.get('JWT_SECRET'),
-            signOptions: { expiresIn: '1h' },
-          }),
-          inject: [ConfigService],
-        }),
+        JwtModule.register({}),
         TypeOrmModule.forRootAsync({
           imports: [ConfigModule],
           useFactory: async (configService: ConfigService) => ({
-            type: 'postgres',
+            type: 'postgres' as const,
             url: configService.get<string>('DATABASE_URL'),
             entities: loadEntites(),
-
             synchronize: true,
           }),
           inject: [ConfigService],
@@ -42,38 +33,38 @@ describe('AuthService', () => {
         TypeOrmModule.forFeature(loadEntites()),
       ],
       controllers: [],
-      providers: [AuthService],
+      providers: [UserService],
     }).compile();
 
-    connection = module.get<Connection>(Connection);
-    authService = module.get<AuthService>(AuthService);
+    dataSource = module.get<DataSource>(DataSource);
+    userService = module.get<UserService>(UserService);
   });
 
   beforeEach(async () => {
-    // Clear the database before each test
-    const entities = connection.entityMetadatas;
+    const entities = dataSource.entityMetadatas;
     for (const entity of entities) {
-      const repository = connection.getRepository(entity.name);
+      const repository = dataSource.getRepository(entity.name);
       await repository.query(`TRUNCATE "${entity.tableName}" CASCADE;`);
     }
     jest.restoreAllMocks();
   });
 
   afterAll(async () => {
-    await connection.close();
+    await dataSource.destroy();
     await module.close();
   });
 
-  describe('registerUser', () => {
+  describe('create', () => {
     it('should register a new user', async () => {
-      const result = await authService.registerUser({
+      const result = await userService.create({
         firstName: 'John',
         lastName: 'Doe',
         email: 'john.doe@example.com',
-        password: 'securePassword123',
+        password: 'Secure@123',
       });
 
-      expect(result).toHaveProperty('message', 'User registered successfully');
+      expect(result).toHaveProperty('id');
+      expect(result.email).toBe('john.doe@example.com');
     });
   });
 });

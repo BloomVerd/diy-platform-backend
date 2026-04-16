@@ -2,10 +2,80 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type User {
+  id: ID!
+  firstName: String!
+  lastName: String!
+  email: String!
+  phone: String
+  role: UserRole!
+  isActive: Boolean!
+  isVerified: Boolean!
+  lastLoginAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+  USER
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type AuthResponse {
+  accessToken: String!
+  refreshToken: String!
+  user: User!
+}
+
+type PaginatedUsersResponse {
+  items: [User!]!
+  totalCount: Int!
+  hasMore: Boolean!
+}
+
 type Query {
-  loginUser(email: String!, password: String!): String!
+  me: User!
+  users(skip: Int! = 0, take: Int! = 25): PaginatedUsersResponse!
+  user(id: String!): User!
 }
 
 type Mutation {
-  registerUser(email: String!, firstName: String!, lastNme: String!, password: String!): String!
+  signup(input: CreateUserInput!): AuthResponse!
+  login(input: LoginInput!): AuthResponse!
+  refreshTokens: AuthResponse!
+  updateUser(input: UpdateUserInput!): User!
+  changePassword(input: ChangePasswordInput!): Boolean!
+  logout: Boolean!
+  removeUser(id: String!): Boolean!
+}
+
+input CreateUserInput {
+  firstName: String!
+  lastName: String!
+  email: String!
+  password: String!
+  phone: String
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+input UpdateUserInput {
+  firstName: String
+  lastName: String
+  phone: String
+  id: ID!
+}
+
+input ChangePasswordInput {
+  currentPassword: String!
+  newPassword: String!
 }
