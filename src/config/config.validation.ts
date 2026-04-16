@@ -25,4 +25,7 @@ export const configValidationSchema = Joi.object({
 
   // CDN
   CDN_BASE_URL: Joi.string().uri().required(),
+
+  // Livestream — RTMP ingest base URL (e.g. rtmp://ingest.example.com/live)
+  STREAM_INGEST_BASE_URL: Joi.string().required(),
 });
