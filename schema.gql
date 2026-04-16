@@ -229,19 +229,68 @@ type UploadSession {
   fields: [UploadField!]!
 }
 
+type Livestream {
+  id: ID!
+  creatorId: String!
+  channelId: String!
+  title: String!
+  description: String
+  category: String
+  thumbnailUrl: String
+  status: LivestreamStatus!
+  streamKey: String!
+  ingestUrl: String!
+  playbackUrl: String
+  scheduledStartAt: DateTime
+  startedAt: DateTime
+  endedAt: DateTime
+  viewerCount: Int!
+  peakViewerCount: Int!
+  recordingEnabled: Boolean!
+  recordingVideoId: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+enum LivestreamStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+  CANCELLED
+}
+
+type LivestreamProduct {
+  id: ID!
+  livestreamId: String!
+  productId: String!
+  displayOrder: Int!
+  note: String
+  isPinned: Boolean!
+  createdAt: DateTime!
+}
+
+type LivestreamConnection {
+  items: [Livestream!]!
+  nextCursor: String
+  totalCount: Int!
+}
+
 type Query {
-  me: User!
-  users(skip: Int! = 0, take: Int! = 25): PaginatedUsersResponse!
-  user(id: String!): User!
+  userProfile: User!
+  listUsers(skip: Int! = 0, take: Int! = 25): PaginatedUsersResponse!
+  getUserProfile(id: String!): User!
   myChannels: [Channel!]!
   channel(id: String!): Channel!
   listUserPlaylists(creatorId: ID, channelId: ID, visibility: PlaylistVisibility, category: String, cursor: String, limit: Int! = 20): PlaylistConnection!
   listPlaylistProducts(playlistId: ID!): [PlaylistProductLink!]!
+  livestream(id: ID!): Livestream!
+  channelLivestreams(channelId: ID!, status: LivestreamStatus, cursor: String, limit: Int! = 20): LivestreamConnection!
+  livestreamProducts(livestreamId: ID!): [LivestreamProduct!]!
 }
 
 type Mutation {
-  signup(input: CreateUserInput!): AuthResponse!
-  login(input: LoginInput!): AuthResponse!
+  registerUser(input: CreateUserInput!): AuthResponse!
+  userLogin(input: LoginInput!): AuthResponse!
   refreshTokens: AuthResponse!
   updateUser(input: UpdateUserInput!): User!
   changePassword(input: ChangePasswordInput!): Boolean!
@@ -264,6 +313,15 @@ type Mutation {
   createUploadSession(input: CreateUploadSessionInput!): UploadSession!
   finalizeUpload(input: FinalizeUploadInput!): Video!
   requestTranscode(videoId: ID!): Video!
+  scheduleLivestream(input: ScheduleLivestreamInput!): Livestream!
+  startLivestream(livestreamId: ID!): Livestream!
+  endLivestream(livestreamId: ID!): Livestream!
+  cancelLivestream(livestreamId: ID!): Livestream!
+  updateLivestream(input: UpdateLivestreamInput!): Livestream!
+  linkProductsToLivestream(input: LinkProductsToLivestreamInput!): Livestream!
+  unlinkProductFromLivestream(livestreamId: ID!, productId: ID!): Boolean!
+  pinProductInLivestream(livestreamId: ID!, productId: ID!): LivestreamProduct!
+  unpinProductInLivestream(livestreamId: ID!, productId: ID!): LivestreamProduct!
 }
 
 input CreateUserInput {
@@ -284,6 +342,7 @@ input UpdateUserInput {
   lastName: String
   phone: String
   id: ID!
+  role: UserRole! = USER
 }
 
 input ChangePasswordInput {
@@ -368,4 +427,35 @@ input FinalizeUploadInput {
   videoId: ID!
   objectKey: String!
   checksum: String
+}
+
+input ScheduleLivestreamInput {
+  channelId: ID!
+  title: String!
+  description: String
+  category: String
+  thumbnailUrl: String
+  scheduledStartAt: DateTime
+  recordingEnabled: Boolean = true
+}
+
+input UpdateLivestreamInput {
+  livestreamId: ID!
+  title: String
+  description: String
+  category: String
+  thumbnailUrl: String
+  scheduledStartAt: DateTime
+  recordingEnabled: Boolean
+}
+
+input LinkProductsToLivestreamInput {
+  livestreamId: ID!
+  links: [LivestreamProductLinkInput!]!
+}
+
+input LivestreamProductLinkInput {
+  productId: ID!
+  displayOrder: Int = 0
+  note: String
 }
