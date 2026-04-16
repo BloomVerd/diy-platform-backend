@@ -2,8 +2,12 @@ import * as Joi from 'joi';
 
 export const configValidationSchema = Joi.object({
   // Application
-  STAGE: Joi.string().valid('development', 'production', 'test').default('development'),
-  NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
+  STAGE: Joi.string()
+    .valid('development', 'production', 'test')
+    .default('development'),
+  NODE_ENV: Joi.string()
+    .valid('development', 'production', 'test')
+    .default('development'),
 
   // Database
   DATABASE_URL: Joi.string().uri().required(),
@@ -25,4 +29,7 @@ export const configValidationSchema = Joi.object({
 
   // CDN
   CDN_BASE_URL: Joi.string().uri().required(),
+
+  // Livestream — RTMP ingest base URL (e.g. rtmp://ingest.example.com/live)
+  STREAM_INGEST_BASE_URL: Joi.string().required(),
 });
