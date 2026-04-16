@@ -29,6 +29,15 @@ import { UploadService } from './upload/upload.service';
 // Processing
 import { TranscodingProcessor } from './processing/transcoding.processor';
 import { TRANSCODING_QUEUE } from './processing/transcoding.queue';
+import { RecordingProcessor } from './processing/recording.processor';
+import { RECORDING_QUEUE } from './processing/recording.queue';
+
+// Livestream
+import { Livestream } from './livestream/livestream.entity';
+import { LivestreamProduct } from './livestream/livestream-product.entity';
+import { LivestreamStatistics } from './livestream/livestream-statistics.entity';
+import { LivestreamService } from './livestream/livestream.service';
+import { LivestreamResolver } from './livestream/livestream.resolver';
 
 // User module (for UserService dependency)
 import { UserModule } from '../user/user.module';
@@ -36,17 +45,27 @@ import { UserModule } from '../user/user.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
+      // Channel
       Channel,
+      // Playlist
       Playlist,
       PlaylistSection,
       PlaylistItem,
       PlaylistStatistics,
       PlaylistProductLink,
+      // Video
       Video,
       VideoAsset,
       VideoVariant,
+      // Livestream
+      Livestream,
+      LivestreamProduct,
+      LivestreamStatistics,
     ]),
-    BullModule.registerQueue({ name: TRANSCODING_QUEUE }),
+    BullModule.registerQueue(
+      { name: TRANSCODING_QUEUE },
+      { name: RECORDING_QUEUE },
+    ),
     UserModule,
   ],
   providers: [
@@ -63,7 +82,11 @@ import { UserModule } from '../user/user.module';
     UploadService,
     // Processing
     TranscodingProcessor,
+    RecordingProcessor,
+    // Livestream
+    LivestreamService,
+    LivestreamResolver,
   ],
-  exports: [ChannelService, PlaylistService, VideoService],
+  exports: [ChannelService, PlaylistService, VideoService, LivestreamService],
 })
 export class VideoModule {}
