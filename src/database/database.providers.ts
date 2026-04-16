@@ -9,14 +9,14 @@ const defaultPostgresDBConnection = (
   autoLoadEntities: true,
   synchronize: configService.get('NODE_ENV') !== 'production',
   url: configService.get('DATABASE_URL'),
-  entities: [__dirname + '../**/*.entity{.ts,.js}'],
-  migrations: [__dirname + '/migrations/**/*{.js,.ts}'],
-  migrationsRun: false,
+  // entities: [__dirname + '../**/*.entity{.ts,.js}'],
+  // migrations: [__dirname + '/migrations/**/*{.js,.ts}'],
+  // migrationsRun: false,
   ssl: {
     rejectUnauthorized: false,
   },
-  logging: true,
-  maxQueryExecutionTime: 1000,
+  // logging: true,
+  // maxQueryExecutionTime: 1000,
 });
 
 const defaultRedisDBConnection = async (configService: ConfigService) => ({

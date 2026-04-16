@@ -15,7 +15,7 @@ async function createDatabase(dbName: string) {
     user: process.env.DB_USERNAME,
     host: process.env.DB_HOST,
     password: process.env.DB_PASSWORD,
-    port: Number(process.env.DB_PORT),
+    port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 5432,
   });
 
   try {
