@@ -123,6 +123,11 @@ export class UserService {
     return { ...tokens, user };
   }
 
+  async isCreatorEligible(creatorId: string): Promise<boolean> {
+    const user = await this.findById(creatorId);
+    return user.isActive && user.role === UserRole.CREATOR;
+  }
+
   async logout(userId: string): Promise<boolean> {
     await this.userRepository.update(userId, { refreshToken: undefined });
     return true;
