@@ -1,16 +1,9 @@
 import { BullModule } from '@nestjs/bullmq';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { CassandraModule } from './cassandra/cassandra.module';
-// import { DatabaseQueryLogger } from '../shared/interceptors/database-query.logger';
 
-/**
- * Setup default connection in the application
- * @param config {ConfigService}
- */
 const defaultPostgresDBConnection = (
   configService: ConfigService,
-  //   queryLogger: DatabaseQueryLogger,
 ): TypeOrmModuleOptions => ({
   type: 'postgres',
   autoLoadEntities: true,
@@ -20,11 +13,10 @@ const defaultPostgresDBConnection = (
   migrations: [__dirname + '/migrations/**/*{.js,.ts}'],
   migrationsRun: false,
   ssl: {
-    rejectUnauthorized: false, // allow self-signed AWS certs
+    rejectUnauthorized: false,
   },
   logging: true,
-  //   logger: queryLogger,
-  maxQueryExecutionTime: 1000, // Log queries slower than 1 second
+  maxQueryExecutionTime: 1000,
 });
 
 const defaultRedisDBConnection = async (configService: ConfigService) => ({
@@ -43,14 +35,5 @@ export const databaseProviders = [
     imports: [ConfigModule],
     inject: [ConfigService],
     useFactory: defaultRedisDBConnection,
-  }),
-  CassandraModule.forRoot({
-    contactPoints: ['127.0.0.1'],
-    localDataCenter: 'datacenter1',
-    keyspace: 'diy_keyspace',
-    credentials: {
-      username: 'cassandra',
-      password: 'cassandra',
-    },
   }),
 ];

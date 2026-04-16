@@ -1,7 +1,14 @@
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+const stage = process.env.STAGE ?? 'development';
+const envFile = stage === 'development' ? `.env.${stage}.local` : '.env';
+dotenv.config({ path: path.resolve(process.cwd(), envFile) });
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { ConfigService } from '@nestjs/config';
 import { Client } from 'pg';
-import { Client as CassandraClient } from 'cassandra-driver';
 
 async function createDatabase(dbName: string) {
   const client = new Client({
@@ -26,37 +33,21 @@ async function createDatabase(dbName: string) {
   }
 }
 
-async function createKeyspace() {
-  const client = new CassandraClient({
-    keyspace: process.env.CASSANDRA_DB_KEYSPACE,
-    contactPoints: [process.env.CASSANDRA_CONTACT_POINTS || '127.0.0.1'],
-    localDataCenter: process.env.CASSANDRA_LOCAL_DATA_CENTER,
-    credentials: {
-      username: process.env.CASSANDRA_USERNAME || '',
-      password: process.env.CASSANDRA_PASSWORD || '',
-    },
-  });
-
-  const query = `
-      CREATE KEYSPACE IF NOT EXISTS diy_keyspace
-      WITH replication = {
-        'class': 'SimpleStrategy',
-        'replication_factor': 1
-      }
-    `;
-  await client.execute(query);
-  // this.logger.log('Keyspace created/verified');
-}
-
 async function bootstrap() {
-  // Create main database
   await createDatabase(process.env.DB_NAME || 'main');
-  await createKeyspace();
-
-  // Create test database
   await createDatabase(process.env.DB_NAME_TEST || 'test');
 
   const app = await NestFactory.create(AppModule);
-  await app.listen(process.env.PORT ?? 3000);
+
+  app.enableCors({
+    origin: '*', // allow all origins (dev only)
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+  });
+
+  const configService = app.get(ConfigService);
+
+  const port = configService.get<number>('PORT', 3000);
+  await app.listen(port);
 }
 bootstrap();

@@ -7,21 +7,19 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { UserModule } from './user/user.module';
 
+const stage = process.env.STAGE ?? 'development';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath: [
-        process.env.STAGE === 'development'
-          ? `.env.${process.env.STAGE}.local`
-          : '.env',
-      ],
+      isGlobal: true,
+      envFilePath: [stage === 'development' ? `.env.${stage}.local` : '.env'],
     }),
     DatabaseModule,
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: 'schema.gql',
-      // sortSchema: true,
-      playground: true,
+      playground: false,
       introspection: true,
       resolvers: {},
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment

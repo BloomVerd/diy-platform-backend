@@ -1,4 +1,4 @@
-import { User } from 'src/user/resources/user.entity';
+import { User } from '../../src/user/entities/user.entity';
 
 export const registerUser = async ({
   email,
@@ -13,7 +13,8 @@ export const registerUser = async ({
 }) => {
   const user = new User();
   user.email = email;
-  user.name = `${firstName} ${lastName}`;
-  user.password = password; // In a real scenario, make sure to hash the password before saving
+  user.firstName = firstName;
+  user.lastName = lastName;
+  user.password = password;
   return user;
 };
