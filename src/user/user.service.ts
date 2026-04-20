@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -8,16 +9,21 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import * as argon2 from 'argon2';
+import { randomInt } from 'crypto';
 import type { StringValue } from 'ms';
 import { Repository } from 'typeorm';
-import { User, UserRole } from './entities/user.entity';
+import { AuthProvider, User, UserRole } from './entities/user.entity';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import { LoginInput } from './dto/login.input';
 import { ChangePasswordInput } from './dto/change-password.input';
 import { AuthResponse } from './dto/auth-response.type';
 import { PaginatedUsersResponse } from './dto/paginated-users-response.type';
+import { OAuthService, OAuthProfile } from './services/oauth.service';
+import { OTP_QUEUE, OtpEmailJobPayload } from './processing/otp.queue';
 
 @Injectable()
 export class UserService {
@@ -26,6 +32,9 @@ export class UserService {
     private userRepository: Repository<User>,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private oauthService: OAuthService,
+    @InjectQueue(OTP_QUEUE)
+    private otpQueue: Queue<OtpEmailJobPayload>,
   ) {}
 
   async registerUser(input: CreateUserInput): Promise<User> {
@@ -40,6 +49,7 @@ export class UserService {
     const user = this.userRepository.create({
       ...input,
       password: hashedPassword,
+      provider: AuthProvider.LOCAL,
     });
     return this.userRepository.save(user);
   }
@@ -85,7 +95,7 @@ export class UserService {
 
   async login(input: LoginInput): Promise<AuthResponse> {
     const user = await this.findByEmail(input.email);
-    if (!user) {
+    if (!user || !user.password) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -94,12 +104,75 @@ export class UserService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
-    user.refreshToken = await argon2.hash(tokens.refreshToken);
-    user.lastLoginAt = new Date();
+    return this.issueTokens(user);
+  }
+
+  async loginWithOAuth(
+    provider: AuthProvider,
+    idToken: string,
+  ): Promise<AuthResponse> {
+    if (provider === AuthProvider.LOCAL) {
+      throw new BadRequestException('OAuth provider required');
+    }
+
+    const profile = await this.oauthService.verify(provider, idToken);
+    const user = await this.findOrCreateFromOAuth(profile);
+    return this.issueTokens(user);
+  }
+
+  async requestEmailOtp(email: string): Promise<boolean> {
+    const user = await this.findByEmail(email);
+    // Always return true to avoid email enumeration.
+    if (!user || !user.isActive) {
+      return true;
+    }
+
+    const code = this.generateOtpCode();
+    const expiryMinutes = this.configService.get<number>(
+      'OTP_EXPIRY_MINUTES',
+      10,
+    );
+
+    user.otpCodeHash = await argon2.hash(code);
+    user.otpExpiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
+    user.otpAttempts = 0;
     await this.userRepository.save(user);
 
-    return { ...tokens, user };
+    await this.otpQueue.add(
+      'send-otp',
+      { email: user.email, code, expiryMinutes },
+      { attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
+    );
+
+    return true;
+  }
+
+  async loginWithOtp(email: string, code: string): Promise<AuthResponse> {
+    const user = await this.findByEmail(email);
+    if (!user || !user.isActive || !user.otpCodeHash || !user.otpExpiresAt) {
+      throw new UnauthorizedException('Invalid or expired code');
+    }
+
+    const maxAttempts = this.configService.get<number>('OTP_MAX_ATTEMPTS', 5);
+    if (user.otpAttempts >= maxAttempts) {
+      await this.clearOtp(user);
+      throw new UnauthorizedException('Too many attempts. Request a new code.');
+    }
+
+    if (user.otpExpiresAt.getTime() < Date.now()) {
+      await this.clearOtp(user);
+      throw new UnauthorizedException('Invalid or expired code');
+    }
+
+    const valid = await argon2.verify(user.otpCodeHash, code);
+    if (!valid) {
+      user.otpAttempts += 1;
+      await this.userRepository.save(user);
+      throw new UnauthorizedException('Invalid or expired code');
+    }
+
+    await this.clearOtp(user, { save: false });
+    return this.issueTokens(user);
   }
 
   async refreshTokens(
@@ -139,6 +212,12 @@ export class UserService {
   ): Promise<boolean> {
     const user = await this.findById(userId);
 
+    if (!user.password) {
+      throw new BadRequestException(
+        'Account has no password. Set one via password reset.',
+      );
+    }
+
     const passwordValid = await argon2.verify(
       user.password,
       input.currentPassword,
@@ -151,6 +230,67 @@ export class UserService {
     user.refreshToken = undefined;
     await this.userRepository.save(user);
     return true;
+  }
+
+  private async findOrCreateFromOAuth(profile: OAuthProfile): Promise<User> {
+    const existingByProvider = await this.userRepository.findOne({
+      where: { provider: profile.provider, providerId: profile.providerId },
+    });
+    if (existingByProvider) {
+      return existingByProvider;
+    }
+
+    const existingByEmail = await this.findByEmail(profile.email);
+    if (existingByEmail) {
+      if (
+        existingByEmail.provider !== AuthProvider.LOCAL &&
+        existingByEmail.provider !== profile.provider
+      ) {
+        throw new ConflictException(
+          'Email is registered with a different provider',
+        );
+      }
+      existingByEmail.provider = profile.provider;
+      existingByEmail.providerId = profile.providerId;
+      if (profile.emailVerified) {
+        existingByEmail.isVerified = true;
+      }
+      return this.userRepository.save(existingByEmail);
+    }
+
+    const user = this.userRepository.create({
+      email: profile.email,
+      firstName: profile.firstName ?? '',
+      lastName: profile.lastName ?? '',
+      provider: profile.provider,
+      providerId: profile.providerId,
+      isVerified: profile.emailVerified,
+    });
+    return this.userRepository.save(user);
+  }
+
+  private async issueTokens(user: User): Promise<AuthResponse> {
+    const tokens = await this.generateTokens(user.id, user.email, user.role);
+    user.refreshToken = await argon2.hash(tokens.refreshToken);
+    user.lastLoginAt = new Date();
+    await this.userRepository.save(user);
+    return { ...tokens, user };
+  }
+
+  private generateOtpCode(): string {
+    return randomInt(0, 1_000_000).toString().padStart(6, '0');
+  }
+
+  private async clearOtp(
+    user: User,
+    opts: { save?: boolean } = { save: true },
+  ): Promise<void> {
+    user.otpCodeHash = undefined;
+    user.otpExpiresAt = undefined;
+    user.otpAttempts = 0;
+    if (opts.save !== false) {
+      await this.userRepository.save(user);
+    }
   }
 
   private async generateTokens(
