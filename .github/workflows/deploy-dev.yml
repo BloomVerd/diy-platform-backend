@@ -77,8 +77,7 @@ jobs:
 
             # Download docker-compose.yml from GitHub
             curl -L -o docker-compose.yml \
-              https://raw.githubusercontent.com/BloomVerd/diy--platform-backend/dev/docker-compose.yml
-
+https://raw.githubusercontent.com/BloomVerd/diy-platform-backend/refs/heads/dev/docker-compose.yml?token=GHSAT0AAAAAADUV55I7EP5VKGJXQQHODPGA2PGRVAQ
             # Verify the file
             echo "Downloaded docker-compose.yml:"
             cat docker-compose.yml
