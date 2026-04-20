@@ -3,6 +3,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
   BeforeInsert,
@@ -15,10 +16,21 @@ export enum UserRole {
   CREATOR = 'CREATOR',
 }
 
+export enum AuthProvider {
+  LOCAL = 'LOCAL',
+  GOOGLE = 'GOOGLE',
+  APPLE = 'APPLE',
+}
+
 registerEnumType(UserRole, { name: 'UserRole' });
+registerEnumType(AuthProvider, { name: 'AuthProvider' });
 
 @ObjectType()
 @Entity('users')
+@Index('IDX_users_provider_provider_id', ['provider', 'providerId'], {
+  unique: true,
+  where: '"providerId" IS NOT NULL',
+})
 export class User {
   @Field(() => ID)
   @PrimaryGeneratedColumn('uuid')
@@ -36,8 +48,8 @@ export class User {
   @Column({ unique: true })
   email: string;
 
-  @Column()
-  password: string;
+  @Column({ nullable: true })
+  password?: string;
 
   @Field(() => String, { nullable: true })
   @Column({ nullable: true, unique: true })
@@ -46,6 +58,13 @@ export class User {
   @Field(() => UserRole)
   @Column({ type: 'enum', enum: UserRole, default: UserRole.USER })
   role: UserRole;
+
+  @Field(() => AuthProvider)
+  @Column({ type: 'enum', enum: AuthProvider, default: AuthProvider.LOCAL })
+  provider: AuthProvider;
+
+  @Column({ nullable: true })
+  providerId?: string;
 
   @Field()
   @Column({ default: true })
@@ -61,6 +80,15 @@ export class User {
 
   @Column({ nullable: true })
   refreshToken?: string;
+
+  @Column({ nullable: true })
+  otpCodeHash?: string;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  otpExpiresAt?: Date;
+
+  @Column({ type: 'int', default: 0 })
+  otpAttempts: number;
 
   @Field()
   @CreateDateColumn()

@@ -28,4 +28,20 @@ export const configValidationSchema = Joi.object({
 
   // Livestream — RTMP ingest base URL (e.g. rtmp://ingest.example.com/live)
   STREAM_INGEST_BASE_URL: Joi.string().required(),
+
+  // OAuth
+  GOOGLE_OAUTH_CLIENT_ID: Joi.string().required(),
+  APPLE_CLIENT_ID: Joi.string().required(),
+
+  // SMTP (nodemailer)
+  SMTP_HOST: Joi.string().required(),
+  SMTP_PORT: Joi.number().default(587),
+  SMTP_SECURE: Joi.boolean().default(false),
+  SMTP_USER: Joi.string().required(),
+  SMTP_PASSWORD: Joi.string().required(),
+  SMTP_FROM: Joi.string().required(),
+
+  // OTP
+  OTP_EXPIRY_MINUTES: Joi.number().default(10),
+  OTP_MAX_ATTEMPTS: Joi.number().default(5),
 });
