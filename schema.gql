@@ -291,6 +291,9 @@ type Query {
 type Mutation {
   registerUser(input: CreateUserInput!): AuthResponse!
   userLogin(input: LoginInput!): AuthResponse!
+  loginWithOAuth(input: OAuthLoginInput!): AuthResponse!
+  requestEmailOtp(input: RequestOtpInput!): Boolean!
+  loginWithOtp(input: VerifyOtpInput!): AuthResponse!
   refreshTokens: AuthResponse!
   updateUser(input: UpdateUserInput!): User!
   changePassword(input: ChangePasswordInput!): Boolean!
