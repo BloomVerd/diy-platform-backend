@@ -1,29 +1,22 @@
 import { BullModule } from '@nestjs/bullmq';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
-// import { DatabaseQueryLogger } from '../shared/interceptors/database-query.logger';
 
-/**
- * Setup default connection in the application
- * @param config {ConfigService}
- */
 const defaultPostgresDBConnection = (
   configService: ConfigService,
-  //   queryLogger: DatabaseQueryLogger,
 ): TypeOrmModuleOptions => ({
   type: 'postgres',
   autoLoadEntities: true,
   synchronize: configService.get('NODE_ENV') !== 'production',
   url: configService.get('DATABASE_URL'),
-  entities: [__dirname + '/entities/*.entity{.ts,.js}'],
-  migrations: [__dirname + '/migrations/**/*{.js,.ts}'],
-  migrationsRun: false,
+  // entities: [__dirname + '../**/*.entity{.ts,.js}'],
+  // migrations: [__dirname + '/migrations/**/*{.js,.ts}'],
+  // migrationsRun: false,
   ssl: {
-    rejectUnauthorized: false, // allow self-signed AWS certs
+    rejectUnauthorized: false,
   },
-  logging: true,
-  //   logger: queryLogger,
-  maxQueryExecutionTime: 1000, // Log queries slower than 1 second
+  // logging: true,
+  // maxQueryExecutionTime: 1000,
 });
 
 const defaultRedisDBConnection = async (configService: ConfigService) => ({

@@ -1,0 +1,371 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type User {
+  id: ID!
+  firstName: String!
+  lastName: String!
+  email: String!
+  phone: String
+  role: UserRole!
+  provider: AuthProvider!
+  isActive: Boolean!
+  isVerified: Boolean!
+  lastLoginAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+  USER
+  CREATOR
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+  APPLE
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type AuthResponse {
+  accessToken: String!
+  refreshToken: String!
+  user: User!
+}
+
+type PaginatedUsersResponse {
+  items: [User!]!
+  totalCount: Int!
+  hasMore: Boolean!
+}
+
+type Channel {
+  id: ID!
+  creatorId: String!
+  name: String!
+  slug: String!
+  description: String
+  category: DIYCategory!
+  coverImageUrl: String
+  status: ChannelStatus!
+  subscriberCount: Int!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+enum DIYCategory {
+  FARMING
+  IT
+  CONSTRUCTION
+  COOKING
+  AUTOMOTIVE
+  CRAFTS
+  PLUMBING
+  ELECTRICAL
+  GARDENING
+  TEXTILE
+  OTHER
+}
+
+enum ChannelStatus {
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+type VideoVariant {
+  id: ID!
+  videoId: String!
+  resolution: VideoResolution!
+  bitrate: Int!
+  codec: String!
+  manifestPath: String!
+  createdAt: DateTime!
+}
+
+enum VideoResolution {
+  P360
+  P720
+  P1080
+}
+
+type VideoAsset {
+  id: ID!
+  videoId: String!
+  assetType: AssetType!
+  storageKey: String!
+  mimeType: String
+  sizeBytes: Int
+  createdAt: DateTime!
+}
+
+enum AssetType {
+  RAW
+  THUMBNAIL
+  MANIFEST
+  SEGMENT
+}
+
+type Video {
+  id: ID!
+  creatorId: String!
+  channelId: String!
+  title: String!
+  description: String
+  tags: [String!]!
+  category: String
+  visibility: VideoVisibility!
+  processingStatus: ProcessingStatus!
+  durationSec: Int
+  thumbnailUrl: String
+  playbackManifestUrl: String
+  viewCount: Int!
+  variants: [VideoVariant!]!
+  assets: [VideoAsset!]!
+  publishedAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+enum VideoVisibility {
+  DRAFT
+  PRIVATE
+  PUBLISHED
+}
+
+enum ProcessingStatus {
+  DRAFT
+  UPLOADING
+  UPLOADED
+  PROCESSING
+  READY
+  FAILED
+  PUBLISHED
+}
+
+type PlaylistItem {
+  id: ID!
+  playlistId: String!
+  videoId: String!
+  video: Video!
+  sectionId: String
+  section: PlaylistSection
+  position: Int!
+  note: String
+  createdAt: DateTime!
+}
+
+type PlaylistSection {
+  id: ID!
+  playlistId: String!
+  title: String!
+  description: String
+  position: Int!
+  items: [PlaylistItem!]!
+  createdAt: DateTime!
+}
+
+type PlaylistStatistics {
+  playlistId: ID!
+  totalViews: Int!
+  totalWatchTimeSec: Int!
+  totalOrders: Int!
+  totalRevenue: Float!
+  lastComputedAt: DateTime
+}
+
+type PlaylistProductLink {
+  id: ID!
+  playlistId: String!
+  productId: ID!
+  displayOrder: Int!
+  note: String
+  createdAt: DateTime!
+}
+
+type Playlist {
+  id: ID!
+  channelId: String!
+  creatorId: String!
+  title: String!
+  description: String
+  category: String
+  coverImageUrl: String
+  visibility: PlaylistVisibility!
+  totalDurationSec: Int!
+  videoCount: Int!
+  sections: [PlaylistSection!]!
+  items: [PlaylistItem!]!
+  linkedProducts: [PlaylistProductLink!]!
+  statistics: PlaylistStatistics
+  publishedAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+enum PlaylistVisibility {
+  DRAFT
+  PRIVATE
+  PUBLISHED
+}
+
+type PlaylistConnection {
+  items: [Playlist!]!
+  nextCursor: String
+  totalCount: Int!
+}
+
+type UploadField {
+  key: String!
+  value: String!
+}
+
+type UploadSession {
+  videoId: ID!
+  uploadUrl: String!
+  objectKey: String!
+  expiresAt: String!
+  fields: [UploadField!]!
+}
+
+type Livestream {
+  id: ID!
+  creatorId: String!
+  channelId: String!
+  title: String!
+  description: String
+  category: String
+  thumbnailUrl: String
+  status: LivestreamStatus!
+  streamKey: String!
+  ingestUrl: String!
+  playbackUrl: String
+  scheduledStartAt: DateTime
+  startedAt: DateTime
+  endedAt: DateTime
+  viewerCount: Int!
+  peakViewerCount: Int!
+  recordingEnabled: Boolean!
+  recordingVideoId: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+enum LivestreamStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+  CANCELLED
+}
+
+type LivestreamProduct {
+  id: ID!
+  livestreamId: String!
+  productId: String!
+  displayOrder: Int!
+  note: String
+  isPinned: Boolean!
+  createdAt: DateTime!
+}
+
+type LivestreamConnection {
+  items: [Livestream!]!
+  nextCursor: String
+  totalCount: Int!
+}
+
+type Query {
+  me: User!
+  users(skip: Int! = 0, take: Int! = 25): PaginatedUsersResponse!
+  user(id: String!): User!
+}
+
+type Mutation {
+  registerUser(input: CreateUserInput!): AuthResponse!
+  userLogin(input: LoginInput!): AuthResponse!
+  loginWithOAuth(input: OAuthLoginInput!): AuthResponse!
+  requestEmailOtp(input: RequestOtpInput!): Boolean!
+  loginWithOtp(input: VerifyOtpInput!): AuthResponse!
+  refreshTokens: AuthResponse!
+  updateUser(input: UpdateUserInput!): User!
+  changePassword(input: ChangePasswordInput!): Boolean!
+  logout: Boolean!
+  removeUser(id: String!): Boolean!
+  createChannel(input: CreateChannelInput!): Channel!
+  createPlaylist(input: CreatePlaylistInput!): Playlist!
+  updatePlaylist(input: UpdatePlaylistInput!): Playlist!
+  publishPlaylist(playlistId: ID!): Playlist!
+  addPlaylistSection(input: AddPlaylistSectionInput!): PlaylistSection!
+  updatePlaylistSection(input: UpdatePlaylistSectionInput!): PlaylistSection!
+  removePlaylistSection(sectionId: ID!): Boolean!
+  addVideoToPlaylist(input: AddVideoToPlaylistInput!): PlaylistItem!
+  reorderPlaylistItems(playlistId: ID!, itemIds: [ID!]!): Playlist!
+  removeVideoFromPlaylist(playlistId: ID!, videoId: ID!): Boolean!
+  linkProductsToPlaylist(input: LinkProductsToPlaylistInput!): Playlist!
+  unlinkProductFromPlaylist(playlistId: ID!, productId: ID!): Boolean!
+  reorderPlaylistProducts(playlistId: ID!, productIds: [ID!]!): Playlist!
+  createVideoDraft(input: CreateVideoDraftInput!): Video!
+  createUploadSession(input: CreateUploadSessionInput!): UploadSession!
+  finalizeUpload(input: FinalizeUploadInput!): Video!
+  requestTranscode(videoId: ID!): Video!
+  scheduleLivestream(input: ScheduleLivestreamInput!): Livestream!
+  startLivestream(livestreamId: ID!): Livestream!
+  endLivestream(livestreamId: ID!): Livestream!
+  cancelLivestream(livestreamId: ID!): Livestream!
+  updateLivestream(input: UpdateLivestreamInput!): Livestream!
+  linkProductsToLivestream(input: LinkProductsToLivestreamInput!): Livestream!
+  unlinkProductFromLivestream(livestreamId: ID!, productId: ID!): Boolean!
+  pinProductInLivestream(livestreamId: ID!, productId: ID!): LivestreamProduct!
+  unpinProductInLivestream(
+    livestreamId: ID!
+    productId: ID!
+  ): LivestreamProduct!
+}
+
+input CreateUserInput {
+  firstName: String!
+  lastName: String!
+  email: String!
+  password: String!
+  phone: String
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+input OAuthLoginInput {
+  provider: AuthProvider!
+  idToken: String!
+}
+
+input RequestOtpInput {
+  email: String!
+}
+
+input VerifyOtpInput {
+  email: String!
+  code: String!
+}
+
+input UpdateUserInput {
+  firstName: String
+  lastName: String
+  phone: String
+  id: ID!
+  role: UserRole! = USER
+}
+
+input ChangePasswordInput {
+  currentPassword: String!
+  newPassword: String!
+}
