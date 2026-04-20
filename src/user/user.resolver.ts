@@ -6,6 +6,9 @@ import { AuthResponse } from './dto/auth-response.type';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import { LoginInput } from './dto/login.input';
+import { OAuthLoginInput } from './dto/oauth-login.input';
+import { RequestOtpInput } from './dto/request-otp.input';
+import { VerifyOtpInput } from './dto/verify-otp.input';
 import { ChangePasswordInput } from './dto/change-password.input';
 import { PaginatedUsersResponse } from './dto/paginated-users-response.type';
 import { GqlAuthGuard } from './guards/gql-auth.guard';
@@ -35,6 +38,27 @@ export class UserResolver {
   @Mutation(() => AuthResponse)
   async userLogin(@Args('input') input: LoginInput): Promise<AuthResponse> {
     return this.userService.login(input);
+  }
+
+  @Mutation(() => AuthResponse)
+  async loginWithOAuth(
+    @Args('input') input: OAuthLoginInput,
+  ): Promise<AuthResponse> {
+    return this.userService.loginWithOAuth(input.provider, input.idToken);
+  }
+
+  @Mutation(() => Boolean)
+  async requestEmailOtp(
+    @Args('input') input: RequestOtpInput,
+  ): Promise<boolean> {
+    return this.userService.requestEmailOtp(input.email);
+  }
+
+  @Mutation(() => AuthResponse)
+  async loginWithOtp(
+    @Args('input') input: VerifyOtpInput,
+  ): Promise<AuthResponse> {
+    return this.userService.loginWithOtp(input.email, input.code);
   }
 
   @Mutation(() => AuthResponse)

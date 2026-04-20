@@ -106,7 +106,10 @@ export class VideoService {
     );
 
     const { uploadUrl, expiresAt } =
-      await this.uploadService.createPresignedUploadUrl(objectKey, input.mimeType);
+      await this.uploadService.createPresignedUploadUrl(
+        objectKey,
+        input.mimeType,
+      );
 
     await this.videoRepo.update(input.videoId, {
       processingStatus: ProcessingStatus.UPLOADING,
@@ -135,7 +138,9 @@ export class VideoService {
     // Security: verify objectKey matches expected prefix
     const expectedPrefix = `raw/${creatorId}/${input.videoId}/`;
     if (!input.objectKey.startsWith(expectedPrefix)) {
-      throw new ForbiddenException('Object key does not match the expected upload path');
+      throw new ForbiddenException(
+        'Object key does not match the expected upload path',
+      );
     }
 
     // Verify the file actually exists in S3
@@ -169,7 +174,9 @@ export class VideoService {
 
     // TODO: set Redis cache: video:processing:{videoId} = PROCESSING
 
-    return this.videoRepo.findOne({ where: { id: input.videoId } }) as Promise<Video>;
+    return this.videoRepo.findOne({
+      where: { id: input.videoId },
+    }) as Promise<Video>;
   }
 
   // ---------------------------------------------------------------------------
@@ -189,10 +196,10 @@ export class VideoService {
       );
     }
 
-    const rawAsset = await this.videoRepo.manager.query(
+    const rawAsset = (await this.videoRepo.manager.query(
       `SELECT storage_key FROM video_assets WHERE video_id = $1 AND asset_type = 'RAW' LIMIT 1`,
       [videoId],
-    ) as Array<{ storage_key: string }>;
+    )) as Array<{ storage_key: string }>;
 
     if (!rawAsset.length) {
       throw new BadRequestException('No raw asset found for this video');
@@ -231,7 +238,10 @@ export class VideoService {
     return video;
   }
 
-  private async assertOwnership(videoId: string, creatorId: string): Promise<Video> {
+  private async assertOwnership(
+    videoId: string,
+    creatorId: string,
+  ): Promise<Video> {
     const video = await this.findById(videoId);
     if (video.creatorId !== creatorId) {
       throw new ForbiddenException('You do not own this video');

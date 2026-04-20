@@ -44,7 +44,11 @@ export class UploadService {
     }
   }
 
-  buildRawObjectKey(creatorId: string, videoId: string, fileName: string): string {
+  buildRawObjectKey(
+    creatorId: string,
+    videoId: string,
+    fileName: string,
+  ): string {
     const sanitized = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
     return `raw/${creatorId}/${videoId}/${sanitized}`;
   }

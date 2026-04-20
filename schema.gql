@@ -9,6 +9,7 @@ type User {
   email: String!
   phone: String
   role: UserRole!
+  provider: AuthProvider!
   isActive: Boolean!
   isVerified: Boolean!
   lastLoginAt: DateTime
@@ -21,6 +22,12 @@ enum UserRole {
   STAFF
   USER
   CREATOR
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+  APPLE
 }
 
 """
@@ -284,6 +291,9 @@ type Query {
 type Mutation {
   registerUser(input: CreateUserInput!): AuthResponse!
   userLogin(input: LoginInput!): AuthResponse!
+  loginWithOAuth(input: OAuthLoginInput!): AuthResponse!
+  requestEmailOtp(input: RequestOtpInput!): Boolean!
+  loginWithOtp(input: VerifyOtpInput!): AuthResponse!
   refreshTokens: AuthResponse!
   updateUser(input: UpdateUserInput!): User!
   changePassword(input: ChangePasswordInput!): Boolean!
@@ -314,7 +324,10 @@ type Mutation {
   linkProductsToLivestream(input: LinkProductsToLivestreamInput!): Livestream!
   unlinkProductFromLivestream(livestreamId: ID!, productId: ID!): Boolean!
   pinProductInLivestream(livestreamId: ID!, productId: ID!): LivestreamProduct!
-  unpinProductInLivestream(livestreamId: ID!, productId: ID!): LivestreamProduct!
+  unpinProductInLivestream(
+    livestreamId: ID!
+    productId: ID!
+  ): LivestreamProduct!
 }
 
 input CreateUserInput {
@@ -328,6 +341,20 @@ input CreateUserInput {
 input LoginInput {
   email: String!
   password: String!
+}
+
+input OAuthLoginInput {
+  provider: AuthProvider!
+  idToken: String!
+}
+
+input RequestOtpInput {
+  email: String!
+}
+
+input VerifyOtpInput {
+  email: String!
+  code: String!
 }
 
 input UpdateUserInput {
