@@ -33,6 +33,16 @@ jobs:
             --push \
             .
 
+      # Copy docker-compose.yml to EC2 from checked-out repo
+      - name: Copy docker-compose.yml to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_IP }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: docker-compose.yml
+          target: ~/bloomverd-diy
+
       # Deploy on provisioned EC2
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.2.0
@@ -74,14 +84,6 @@ jobs:
 
             # Write .env
             echo "${{ secrets.ENV_FILE }}" > .env
-
-            # Download docker-compose.yml from GitHub
-            curl -L -o docker-compose.yml \
-            https://raw.githubusercontent.com/BloomVerd/diy-platform-backend/refs/heads/dev/docker-compose.yml
-
-            # Verify the file
-            echo "Downloaded docker-compose.yml:"
-            cat docker-compose.yml
 
             # Start app
             docker compose up -d --remove-orphans
