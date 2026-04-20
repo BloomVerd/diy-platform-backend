@@ -291,9 +291,6 @@ type Query {
 type Mutation {
   registerUser(input: CreateUserInput!): AuthResponse!
   userLogin(input: LoginInput!): AuthResponse!
-  loginWithOAuth(input: OAuthLoginInput!): AuthResponse!
-  requestEmailOtp(input: RequestOtpInput!): Boolean!
-  loginWithOtp(input: VerifyOtpInput!): AuthResponse!
   refreshTokens: AuthResponse!
   updateUser(input: UpdateUserInput!): User!
   changePassword(input: ChangePasswordInput!): Boolean!
@@ -324,7 +321,10 @@ type Mutation {
   linkProductsToLivestream(input: LinkProductsToLivestreamInput!): Livestream!
   unlinkProductFromLivestream(livestreamId: ID!, productId: ID!): Boolean!
   pinProductInLivestream(livestreamId: ID!, productId: ID!): LivestreamProduct!
-  unpinProductInLivestream(livestreamId: ID!, productId: ID!): LivestreamProduct!
+  unpinProductInLivestream(
+    livestreamId: ID!
+    productId: ID!
+  ): LivestreamProduct!
 }
 
 input CreateUserInput {

@@ -37,7 +37,7 @@ export class UserService {
     private otpQueue: Queue<OtpEmailJobPayload>,
   ) {}
 
-  async create(input: CreateUserInput): Promise<User> {
+  async registerUser(input: CreateUserInput): Promise<User> {
     const existing = await this.userRepository.findOne({
       where: { email: input.email.toLowerCase() },
     });
@@ -80,7 +80,7 @@ export class UserService {
     });
   }
 
-  async update(id: string, input: UpdateUserInput): Promise<User> {
+  async updateUserProfile(id: string, input: UpdateUserInput): Promise<User> {
     const user = await this.findById(id);
     Object.assign(user, input);
     return this.userRepository.save(user);

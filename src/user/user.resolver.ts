@@ -25,8 +25,10 @@ export class UserResolver {
   // --- Public mutations ---
 
   @Mutation(() => AuthResponse)
-  async signup(@Args('input') input: CreateUserInput): Promise<AuthResponse> {
-    await this.userService.create(input);
+  async registerUser(
+    @Args('input') input: CreateUserInput,
+  ): Promise<AuthResponse> {
+    await this.userService.registerUser(input);
     return this.userService.login({
       email: input.email,
       password: input.password,
@@ -34,7 +36,7 @@ export class UserResolver {
   }
 
   @Mutation(() => AuthResponse)
-  async login(@Args('input') input: LoginInput): Promise<AuthResponse> {
+  async userLogin(@Args('input') input: LoginInput): Promise<AuthResponse> {
     return this.userService.login(input);
   }
 
@@ -71,14 +73,14 @@ export class UserResolver {
 
   @Query(() => User)
   @UseGuards(GqlAuthGuard)
-  async me(@CurrentUser() user: JwtPayload): Promise<User> {
+  async userProfile(@CurrentUser() user: JwtPayload): Promise<User> {
     return this.userService.findById(user.userId);
   }
 
   @Query(() => PaginatedUsersResponse)
   @UseGuards(GqlAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  async users(
+  async listUsers(
     @Args('skip', { type: () => Int, defaultValue: 0 }) skip: number,
     @Args('take', { type: () => Int, defaultValue: 25 }) take: number,
   ): Promise<PaginatedUsersResponse> {
@@ -88,7 +90,9 @@ export class UserResolver {
   @Query(() => User)
   @UseGuards(GqlAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  async user(@Args('id', { type: () => String }) id: string): Promise<User> {
+  async getUserProfile(
+    @Args('id', { type: () => String }) id: string,
+  ): Promise<User> {
     return this.userService.findById(id);
   }
 
@@ -106,7 +110,7 @@ export class UserResolver {
     ) {
       throw new ForbiddenException('You can only update your own profile');
     }
-    return this.userService.update(input.id, input);
+    return this.userService.updateUserProfile(input.id, input);
   }
 
   @Mutation(() => Boolean)
