@@ -1,0 +1,87 @@
+name: DIY CI/CD
+
+on:
+  push:
+    branches: ['dev']
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Build and push Docker image
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        run: |
+          docker buildx build \
+            --platform linux/arm64 \
+            --tag ${{ secrets.DOCKER_USERNAME }}/diy-backend:latest \
+            --push \
+            .
+
+      # Deploy on provisioned EC2
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_IP }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/bloomverd-diy || mkdir ~/bloomverd-diy && cd ~/bloomverd-diy
+
+            # Update system
+            sudo dnf update -y
+
+            # Install Docker
+            sudo dnf install -y docker
+
+            # Start & enable Docker service
+            sudo systemctl start docker
+            sudo systemctl enable docker
+
+            # Add ec2-user to docker group (so we can run docker without sudo)
+            sudo usermod -aG docker ec2-user
+
+            # Install Docker Compose v2 (plugin-based in AL2023)
+            sudo curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m) -o /usr/libexec/docker/cli-plugins/docker-compose
+            sudo chmod +x /usr/libexec/docker/cli-plugins/docker-compose
+
+            # Verify installation
+            docker --version
+            docker compose version
+
+            # Cleanup old containers/images
+            docker stop $(docker ps -a -q)
+            docker rm $(docker ps -a -q)
+            docker rmi $(docker images -a -q)
+            # remove if you need data to persist
+            # docker system prune -af
+            # docker volume prune -f
+
+            # Write .env
+            echo "${{ secrets.ENV_FILE }}" > .env
+
+            # Download docker-compose.yml from GitHub
+            curl -L -o docker-compose.yml \
+              https://raw.githubusercontent.com/BloomVerd/diy-backend/main/docker-compose.yml
+
+            # Verify the file
+            echo "Downloaded docker-compose.yml:"
+            cat docker-compose.yml
+
+            # Start app
+            docker compose up -d --remove-orphans

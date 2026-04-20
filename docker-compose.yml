@@ -1,0 +1,52 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: diy_platform_dev
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bloomverd-diy-network
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: unless-stopped
+    command: redis-server --requirepass password
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', 'password', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - bloomverd-diy-network
+
+  diy-backend:
+    image: fkaaziebu/diy-backend
+    container_name: diy-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    ports:
+      - '4000:4000'
+    networks:
+      - bloomverd-diy-network
+
+networks:
+  bloomverd-diy-network:
+    driver: bridge
