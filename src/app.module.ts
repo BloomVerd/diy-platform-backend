@@ -22,7 +22,7 @@ const stage = process.env.STAGE ?? 'development';
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: 'schema.gql',
-      playground: false,
+      playground: true,
       introspection: true,
       resolvers: {},
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
